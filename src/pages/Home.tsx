@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDialog } from '../context/DialogContext';
 import { useState, useEffect } from 'react';
 import { User, FeedbackRequest } from '../types';
+import { motion } from 'motion/react';
 
 export default function Home() {
   const { user } = useAuth();
@@ -132,23 +133,42 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-12 space-y-12">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-4xl mx-auto mt-12 space-y-12"
+    >
       <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl mb-4">
+        <motion.h1 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl mb-4"
+        >
           360° Feedback Platform
-        </h1>
-        <p className="text-lg text-stone-600 max-w-2xl mx-auto">
-          Confidential peer, line manager, and team feedback to support growth and development at GAIL's Bakery.
-        </p>
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="text-lg text-stone-600 max-w-2xl mx-auto"
+        >
+          Confidential peer, line manager, and team feedback to support growth and development at GAIL's Marlow.
+        </motion.p>
       </div>
 
       {/* Pending Requests Section */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
         <h2 className="text-2xl font-bold text-stone-900 mb-6 flex items-center">
           <Clock className="w-6 h-6 mr-2 text-red-600" /> Pending Requests ({pendingRequests.length})
         </h2>
         {pendingRequests.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center shadow-sm">
+          <div className="bg-white rounded-3xl border border-stone-200 p-8 text-center shadow-sm">
             <p className="text-stone-500">You have no pending feedback requests.</p>
           </div>
         ) : (
@@ -157,7 +177,7 @@ export default function Home() {
               <Link
                 key={req.id}
                 to={`/give-feedback?requestId=${req.id}`}
-                className="group relative rounded-2xl border border-stone-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-red-200 flex flex-col justify-between"
+                className="group relative rounded-3xl border border-stone-200 bg-white p-6 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 hover:border-red-200 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -178,11 +198,15 @@ export default function Home() {
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Sent Requests Section */}
       {sentRequests.length > 0 && (
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+        >
           <h2 className="text-2xl font-bold text-stone-900 mb-6 flex items-center">
             <Share2 className="w-6 h-6 mr-2 text-blue-600" /> Sent Requests ({sentRequests.length})
           </h2>
@@ -190,7 +214,7 @@ export default function Home() {
             {sentRequests.map(req => (
               <div
                 key={req.id}
-                className="group relative rounded-2xl border border-stone-200 bg-white p-6 shadow-sm flex flex-col justify-between"
+                className="group relative rounded-3xl border border-stone-200 bg-white p-6 shadow-sm flex flex-col justify-between transition-all hover:shadow-md"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -216,10 +240,15 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
-      <div className="grid sm:grid-cols-2 gap-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+        className="grid sm:grid-cols-2 gap-6"
+      >
 
         {requestToCancel && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -253,7 +282,7 @@ export default function Home() {
 
         <Link
           to="/dashboard"
-          className="group relative rounded-2xl border border-stone-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-stone-300"
+          className="group relative rounded-3xl border border-stone-200 bg-white p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 hover:border-stone-300"
         >
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-stone-100 text-stone-600 mb-6 group-hover:scale-110 transition-transform">
             <LayoutDashboard className="w-6 h-6" />
@@ -267,8 +296,8 @@ export default function Home() {
           </div>
         </Link>
 
-        <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 mb-6">
+        <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 mb-6 group-hover:scale-110 transition-transform">
             <Share2 className="w-6 h-6" />
           </div>
           <h2 className="text-xl font-semibold text-stone-900 mb-2">Request Feedback</h2>
@@ -296,8 +325,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mb-6">
+        <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
             <Users className="w-6 h-6" />
           </div>
           <h2 className="text-xl font-semibold text-stone-900 mb-2">360° Anonymous Request</h2>
@@ -323,7 +352,7 @@ export default function Home() {
         </div>
 
         {/* Shower Thoughts Section */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+        <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 mb-6">
             <Lightbulb className="w-6 h-6" />
           </div>
@@ -359,7 +388,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

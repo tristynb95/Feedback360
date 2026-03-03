@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PULSE_CATEGORIES } from '../constants';
 import { Loader2, CheckCircle2, AlertCircle, User as UserIcon, ChevronDown } from 'lucide-react';
 import { useDialog } from '../context/DialogContext';
+import { motion } from 'motion/react';
 
 export default function PulseCheck() {
   const navigate = useNavigate();
@@ -90,7 +91,12 @@ export default function PulseCheck() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-4xl mx-auto pb-12"
+    >
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-stone-900 mb-2 uppercase tracking-tight">Team Pulse Check</h1>
         <p className="text-stone-500 italic">Quick, confidential, and your honest voice matters.</p>
@@ -272,7 +278,7 @@ export default function PulseCheck() {
           </div>
           <div className="p-8">
             <label className="block text-base font-bold text-stone-800 mb-6 text-center">
-              On a scale of 0–10, how likely are you to recommend GAIL's as a place to work to a friend?
+              On a scale of 0–10, how likely are you to recommend GAIL's Marlow as a place to work to a friend?
             </label>
             
             <div className="flex flex-wrap justify-center gap-2 mb-4">
@@ -315,6 +321,6 @@ export default function PulseCheck() {
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }

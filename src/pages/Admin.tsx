@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { Loader2, UserPlus, Trash2, Users, Shield, ShieldOff, Edit2, X, Check } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function Admin() {
   const [users, setUsers] = useState<User[]>([]);
@@ -149,7 +150,12 @@ export default function Admin() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-4xl mx-auto space-y-8"
+    >
       <div className="mb-8 border-b border-stone-200 pb-8">
         <h1 className="text-3xl font-bold text-stone-900 mb-2">Staff Administration</h1>
         <p className="text-stone-600">Manage team members available for 360° feedback.</p>
@@ -382,6 +388,6 @@ export default function Admin() {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

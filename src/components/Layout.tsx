@@ -17,17 +17,32 @@ export default function Layout() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const navItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/give-feedback', label: 'Give Feedback', icon: ClipboardList },
-    { path: '/self-assessment', label: 'Self-Assessment', icon: UserCheck },
-    { path: '/pulse-check', label: 'Pulse Check', icon: Activity },
-    { path: '/dashboard', label: 'My Feedback', icon: LayoutDashboard },
+  const navGroups = [
+    {
+      title: 'Overview',
+      items: [
+        { path: '/', label: 'Home', icon: Home },
+        { path: '/dashboard', label: 'My Feedback', icon: LayoutDashboard },
+      ]
+    },
+    {
+      title: 'Actions',
+      items: [
+        { path: '/self-assessment', label: 'Self-Assessment', icon: UserCheck },
+        { path: '/give-feedback', label: 'Give Feedback', icon: ClipboardList },
+        { path: '/pulse-check', label: 'Pulse Check', icon: Activity },
+      ]
+    }
   ];
 
   if (user?.is_admin) {
-    navItems.push({ path: '/admin', label: 'Admin', icon: Users });
-    navItems.push({ path: '/shower-thoughts', label: 'Shower Thoughts', icon: Lightbulb });
+    navGroups.push({
+      title: 'Admin',
+      items: [
+        { path: '/admin', label: 'User Management', icon: Users },
+        { path: '/shower-thoughts', label: 'Shower Thoughts', icon: Lightbulb },
+      ]
+    });
   }
 
   const handleLogout = () => {
@@ -46,7 +61,7 @@ export default function Layout() {
           >
             <Menu className="w-6 h-6" />
           </button>
-          <span className="text-xl font-black tracking-tight text-red-700">GAIL's</span>
+          <span className="text-xl font-black tracking-tight text-red-700">Marlow360</span>
         </div>
         <div className="flex items-center space-x-2">
           <NotificationCenter placement="bottom-right" />
@@ -75,7 +90,7 @@ export default function Layout() {
         {/* Sidebar Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-stone-200 flex-shrink-0">
           <div className={cn("flex items-center overflow-hidden", isSidebarCollapsed ? "lg:hidden" : "")}>
-            <span className="text-xl font-black tracking-tight text-red-700 whitespace-nowrap">GAIL's Bakery</span>
+            <span className="text-xl font-black tracking-tight text-red-700 whitespace-nowrap">Marlow360</span>
           </div>
           {isSidebarCollapsed && (
             <div className="hidden lg:flex w-full justify-center">
@@ -93,58 +108,75 @@ export default function Layout() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center px-3 py-2.5 rounded-lg transition-colors group relative",
-                  isActive
-                    ? "bg-red-50 text-red-700"
-                    : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-                )}
-                title={isSidebarCollapsed ? item.label : undefined}
-              >
-                <Icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-red-600" : "text-stone-400 group-hover:text-stone-600")} />
-                <span className={cn(
-                  "ml-3 font-medium whitespace-nowrap transition-opacity duration-200",
-                  isSidebarCollapsed ? "lg:opacity-0 lg:w-0 lg:hidden" : "opacity-100"
-                )}>
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6 scrollbar-hide">
+          {navGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              {!isSidebarCollapsed && (
+                <h3 className="px-3 text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">
+                  {group.title}
+                </h3>
+              )}
+              {isSidebarCollapsed && groupIdx > 0 && (
+                <div className="mx-3 my-4 border-t border-stone-200" />
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                      isActive
+                        ? "bg-red-50 text-red-700 font-semibold"
+                        : "text-stone-600 hover:bg-stone-100 hover:text-stone-900 font-medium"
+                    )}
+                    title={isSidebarCollapsed ? item.label : undefined}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 top-2 bottom-2 w-1 bg-red-600 rounded-r-md" />
+                    )}
+                    <Icon className={cn(
+                      "w-5 h-5 flex-shrink-0 transition-colors", 
+                      isActive ? "text-red-600" : "text-stone-400 group-hover:text-stone-600"
+                    )} />
+                    <span className={cn(
+                      "ml-3 whitespace-nowrap transition-all duration-200",
+                      isSidebarCollapsed ? "lg:opacity-0 lg:w-0 lg:hidden" : "opacity-100"
+                    )}>
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* User Profile & Actions */}
         {user && (
-          <div className="p-4 border-t border-stone-200 flex-shrink-0">
-            <div className={cn(
-              "flex items-center mb-4",
-              isSidebarCollapsed ? "lg:justify-center" : ""
-            )}>
-              <div className="hidden lg:block">
-                {isSidebarCollapsed ? (
-                  <NotificationCenter placement="right-bottom" />
-                ) : (
-                  <div className="flex items-center justify-between w-full">
-                    <NotificationCenter placement="top-right" />
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="p-4 border-t border-stone-200 flex-shrink-0 bg-white">
+            {!isSidebarCollapsed && (
+               <div className="mb-3 flex items-center justify-between px-2">
+                 <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Account</span>
+                 <div className="hidden lg:block">
+                   <NotificationCenter placement="top-center" />
+                 </div>
+               </div>
+            )}
+            {isSidebarCollapsed && (
+               <div className="mb-3 flex justify-center">
+                 <NotificationCenter placement="right-bottom" />
+               </div>
+            )}
             
             <div className={cn(
-              "flex items-center",
+              "flex items-center bg-stone-50 rounded-xl p-2 border border-stone-100",
               isSidebarCollapsed ? "lg:justify-center" : "justify-between"
             )}>
               <div className={cn(
-                "flex flex-col overflow-hidden",
+                "flex flex-col overflow-hidden px-2",
                 isSidebarCollapsed ? "lg:hidden" : ""
               )}>
                 <span className="text-sm font-bold text-stone-900 truncate">{user.name}</span>
@@ -155,11 +187,11 @@ export default function Layout() {
                 onClick={handleLogout}
                 className={cn(
                   "p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
-                  isSidebarCollapsed ? "" : "ml-2"
+                  isSidebarCollapsed ? "" : "ml-1"
                 )}
                 title="Sign out"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>

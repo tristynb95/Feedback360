@@ -5,19 +5,21 @@ import { Notification } from '../types';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
-export default function NotificationCenter({ placement = 'bottom-right' }: { placement?: 'bottom-right' | 'right-bottom' | 'top-right' }) {
+export default function NotificationCenter({ placement = 'bottom-right' }: { placement?: 'bottom-right' | 'right-bottom' | 'top-right' | 'top-center' }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user || !user.id) return;
     try {
       const res = await fetch(`/api/notifications/${user.id}`);
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
+      } else {
+        console.error('Failed to fetch notifications', res.status, res.statusText);
       }
     } catch (error) {
       console.error('Failed to fetch notifications', error);
@@ -53,7 +55,7 @@ export default function NotificationCenter({ placement = 'bottom-right' }: { pla
   };
 
   const markAllAsRead = async () => {
-    if (!user) return;
+    if (!user || !user.id) return;
     try {
       await fetch(`/api/notifications/read-all/${user.id}`, { method: 'PATCH' });
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
@@ -81,7 +83,8 @@ export default function NotificationCenter({ placement = 'bottom-right' }: { pla
           "absolute bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden z-50 animate-in fade-in duration-200 w-80 sm:w-96",
           placement === 'bottom-right' && "right-0 mt-2 slide-in-from-top-2",
           placement === 'right-bottom' && "left-full ml-2 bottom-0 slide-in-from-left-2",
-          placement === 'top-right' && "right-0 bottom-full mb-2 slide-in-from-bottom-2"
+          placement === 'top-right' && "right-0 bottom-full mb-2 slide-in-from-bottom-2",
+          placement === 'top-center' && "left-1/2 -translate-x-1/2 bottom-full mb-2 slide-in-from-bottom-2"
         )}>
           <div className="p-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
             <h3 className="font-semibold text-stone-900">Notifications</h3>

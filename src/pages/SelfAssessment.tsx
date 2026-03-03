@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDialog } from '../context/DialogContext';
+import { motion } from 'motion/react';
 
 export default function SelfAssessment() {
   const { user: currentUser } = useAuth();
@@ -80,7 +81,7 @@ export default function SelfAssessment() {
     if (form.overall_assessment) filledFields++;
 
     setProgress(Math.round((filledFields / totalFields) * 100));
-  }, [form, request]);
+  }, [form]);
 
   const handleScoreChange = (questionId: number, score: number) => {
     setForm((prev) => {
@@ -153,7 +154,12 @@ export default function SelfAssessment() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-24">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-4xl mx-auto pb-24"
+    >
       <div className="mb-8 border-b border-stone-200 pb-8">
         <h1 className="text-3xl font-bold text-stone-900 mb-2">Self-Assessment Form</h1>
         <p className="text-stone-600">Reflect on your own performance and identify areas for growth.</p>
@@ -208,7 +214,7 @@ export default function SelfAssessment() {
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="font-bold text-emerald-600 mb-1">3 — Meets Expectations</div>
-              <div className="text-xs text-stone-600">Reliably performs to GAIL's standard.</div>
+              <div className="text-xs text-stone-600">Reliably performs to Marlow360 standard.</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="font-bold text-blue-600 mb-1">4 — Exceeds Expectations</div>
@@ -397,6 +403,6 @@ export default function SelfAssessment() {
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }

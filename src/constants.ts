@@ -14,18 +14,18 @@ export const CATEGORIES = [
     id: 'coffee_barista',
     title: 'COFFEE & BARISTA SKILLS',
     questions: [
-      { id: 6, text: 'Produces consistently high-quality espresso-based drinks to GAIL’s standards.' },
+      { id: 6, text: 'Produces consistently high-quality espresso-based drinks to Marlow360 standards.' },
       { id: 7, text: 'Manages milk steaming, latte art, and drink presentation to a professional standard.' },
       { id: 8, text: 'Keeps the coffee machine clean, calibrated, and well-maintained throughout the day.' },
       { id: 9, text: 'Works efficiently on the coffee machine during peak trade without sacrificing quality.' },
-      { id: 10, text: 'Demonstrates strong product knowledge of GAIL’s coffee origins, blends, and brew methods.' },
+      { id: 10, text: 'Demonstrates strong product knowledge of Marlow360 coffee origins, blends, and brew methods.' },
     ]
   },
   {
     id: 'operations_speed',
     title: 'OPERATIONS & SPEED OF SERVICE',
     questions: [
-      { id: 11, text: 'Follows GAIL’s operational procedures accurately and consistently (e.g., till process, waste, stock rotation).' },
+      { id: 11, text: 'Follows Marlow360 operational procedures accurately and consistently (e.g., till process, waste, stock rotation).' },
       { id: 12, text: 'Works with urgency during peak periods and maintains a strong pace throughout the shift.' },
       { id: 13, text: 'Manages their section or station effectively, keeping queues moving and customers served promptly.' },
       { id: 14, text: 'Completes opening, mid-shift, and closing routines to the required standard and on time.' },
@@ -95,7 +95,7 @@ export const CATEGORIES = [
       { id: 42, text: 'Effectively trains and onboards new team members with patience and clarity.' },
       { id: 43, text: 'Shares product knowledge, recipes, and bakery standards with the wider team.' },
       { id: 44, text: 'Gives clear, specific feedback that helps others improve their performance.' },
-      { id: 45, text: 'Demonstrates strong knowledge of GAIL’s brand values, menu, and seasonal offerings.' },
+      { id: 45, text: 'Demonstrates strong knowledge of Marlow360 brand values, menu, and seasonal offerings.' },
       { id: 46, text: 'Understands and can explain key bakery KPIs such as NPS, waste, and labour targets.' },
     ]
   },
@@ -104,7 +104,7 @@ export const CATEGORIES = [
     title: 'ORGANISATION & STANDARDS',
     questions: [
       { id: 47, text: 'Keeps their work area tidy, well-stocked, and visually appealing at all times.' },
-      { id: 48, text: 'Follows GAIL’s merchandising and display standards for bread, pastries, and counter presentation.' },
+      { id: 48, text: 'Follows Marlow360 merchandising and display standards for bread, pastries, and counter presentation.' },
       { id: 49, text: 'Manages their time effectively, balancing multiple tasks without dropping standards.' },
       { id: 50, text: 'Ensures accurate stock counts, deliveries, and waste recording.' },
       { id: 51, text: 'Upholds brand standards in personal presentation, uniform, and bakery appearance.' },
@@ -128,7 +128,7 @@ export const PULSE_CATEGORIES = [
     id: 'happiness_wellbeing',
     title: 'HAPPINESS & WELLBEING',
     questions: [
-      { id: 1, text: 'I enjoy coming to work at GAIL\'s.' },
+      { id: 1, text: 'I enjoy coming to work at Marlow360.' },
       { id: 2, text: 'I feel valued and appreciated by my team.' },
       { id: 3, text: 'I have a healthy work-life balance in my current role.' },
     ]

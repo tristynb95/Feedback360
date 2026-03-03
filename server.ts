@@ -420,9 +420,13 @@ app.post('/api/feedback', (req, res) => {
     }
     
     // Add notification
+    const notificationMessage = final_reviewer_relationship === 'Self' 
+      ? 'You have completed a self-assessment.'
+      : `${final_reviewer_name} has completed their feedback for you.`;
+
     db.prepare('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)').run(
       reviewee_id,
-      `${final_reviewer_name} has completed their feedback for you.`,
+      notificationMessage,
       `/dashboard`
     );
 

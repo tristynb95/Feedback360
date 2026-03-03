@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDialog } from '../context/DialogContext';
+import { motion } from 'motion/react';
 
 export default function GiveFeedback() {
   const [searchParams] = useSearchParams();
@@ -142,7 +143,7 @@ export default function GiveFeedback() {
         if (requestId) {
           localStorage.removeItem(`feedback_form_${requestId}`);
         }
-        showDialog('Feedback Submitted', 'Thank you for taking the time to provide this feedback. Your input directly supports your colleague\'s growth and development at GAIL\'s.');
+        showDialog('Feedback Submitted', 'Thank you for taking the time to provide this feedback. Your input directly supports your colleague\'s growth and development at Marlow360.');
         navigate('/');
       }
     } catch (error) {
@@ -181,7 +182,12 @@ export default function GiveFeedback() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-24">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-4xl mx-auto pb-24"
+    >
       <div className="mb-8 border-b border-stone-200 pb-8">
         <h1 className="text-3xl font-bold text-stone-900 mb-2">360° Feedback Form</h1>
         <p className="text-stone-600">Confidential Peer, Line Manager & Team Feedback</p>
@@ -273,7 +279,7 @@ export default function GiveFeedback() {
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="font-bold text-emerald-600 mb-1">3 — Meets Expectations</div>
-              <div className="text-xs text-stone-600">Reliably performs to GAIL's standard.</div>
+              <div className="text-xs text-stone-600">Reliably performs to Marlow360 standard.</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="font-bold text-blue-600 mb-1">4 — Exceeds Expectations</div>
@@ -462,6 +468,6 @@ export default function GiveFeedback() {
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }

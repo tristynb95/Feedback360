@@ -3,6 +3,7 @@ import { User, Feedback } from '../types';
 import { CATEGORIES } from '../constants';
 import { Loader2, User as UserIcon, TrendingUp, TrendingDown, MessageSquare, Trash2, ChevronDown, ChevronUp, Archive, ArchiveRestore } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'motion/react';
 import {
   Radar,
   RadarChart,
@@ -12,6 +13,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -35,6 +38,17 @@ export default function Dashboard() {
   const [archivingId, setArchivingId] = useState<number | null>(null);
   const [deletePrompt, setDeletePrompt] = useState<{ id: number; step: 1 | 2 } | null>(null);
   const [confirmEndCampaignId, setConfirmEndCampaignId] = useState<number | null>(null);
+  const [selectedSelfAssessmentId, setSelectedSelfAssessmentId] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [filterMonth, setFilterMonth] = useState<string>('all');
+  const [filterReviewer, setFilterReviewer] = useState<string>('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (currentUser?.is_admin) {
@@ -71,6 +85,12 @@ export default function Dashboard() {
         .then((res) => res.json())
         .then((data) => {
           setFeedback(data);
+          const selfAssessments = data.filter((f: Feedback) => !f.is_archived && f.reviewer_relationship === 'Self');
+          if (selfAssessments.length > 0) {
+            setSelectedSelfAssessmentId(selfAssessments[0].id);
+          } else {
+            setSelectedSelfAssessmentId(null);
+          }
           setLoadingFeedback(false);
         });
     } else {
@@ -88,8 +108,21 @@ export default function Dashboard() {
 
   // Calculate Aggregates
   const calculateAverages = () => {
-    const activeFeedback = feedback.filter(f => !f.is_archived && f.reviewer_relationship !== 'Self');
-    const selfAssessmentFeedback = feedback.find(f => !f.is_archived && f.reviewer_relationship === 'Self');
+    let activeFeedback = feedback.filter(f => !f.is_archived && f.reviewer_relationship !== 'Self');
+
+    if (filterMonth !== 'all') {
+      activeFeedback = activeFeedback.filter(f => f.date.substring(0, 7) === filterMonth);
+    }
+    if (filterReviewer !== 'all') {
+      activeFeedback = activeFeedback.filter(f => f.reviewer_name === filterReviewer);
+    }
+    if (filterRole !== 'all') {
+      activeFeedback = activeFeedback.filter(f => f.reviewer_relationship === filterRole);
+    }
+
+    const selfAssessmentFeedback = selectedSelfAssessmentId 
+      ? feedback.find(f => f.id === selectedSelfAssessmentId)
+      : feedback.find(f => !f.is_archived && f.reviewer_relationship === 'Self');
     
     if (activeFeedback.length === 0 && !selfAssessmentFeedback) return null;
 
@@ -160,11 +193,11 @@ export default function Dashboard() {
       return {
         subject: cat.title.split(' ')[0], // Shorten for radar chart
         fullTitle: cat.title,
-        score: catCount > 0 ? Number((catTotal / catCount).toFixed(1)) : null,
-        selfScore: selfScore,
+        score: catCount > 0 ? Number((catTotal / catCount).toFixed(1)) : 0,
+        selfScore: selfScore !== null ? selfScore : 0,
         fullMark: 4,
       };
-    }).filter(data => data.score !== null || data.selfScore !== null);
+    });
 
     // Find top strengths and areas for improvement
     const allQuestionAverages = Object.entries(questionScores)
@@ -185,12 +218,54 @@ export default function Dashboard() {
       return { ...q, score: qa.score };
     });
 
+    // Calculate Progress Data
+    let progressFeedback = feedback.filter(f => !f.is_archived);
+    if (filterReviewer !== 'all') {
+      progressFeedback = progressFeedback.filter(f => f.reviewer_name === filterReviewer || f.reviewer_relationship === 'Self');
+    }
+    if (filterRole !== 'all') {
+      progressFeedback = progressFeedback.filter(f => f.reviewer_relationship === filterRole || f.reviewer_relationship === 'Self');
+    }
+
+    const progressByMonth: Record<string, { peerTotal: number; peerCount: number; selfTotal: number; selfCount: number }> = {};
+
+    progressFeedback.forEach(f => {
+      const month = f.date.substring(0, 7);
+      if (!progressByMonth[month]) {
+        progressByMonth[month] = { peerTotal: 0, peerCount: 0, selfTotal: 0, selfCount: 0 };
+      }
+      
+      if (f.overall_assessment) {
+        if (f.reviewer_relationship === 'Self') {
+          progressByMonth[month].selfTotal += Number(f.overall_assessment);
+          progressByMonth[month].selfCount++;
+        } else {
+          progressByMonth[month].peerTotal += Number(f.overall_assessment);
+          progressByMonth[month].peerCount++;
+        }
+      }
+    });
+
+    const progressData = Object.entries(progressByMonth)
+      .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
+      .map(([month, data]) => {
+        const date = new Date(month + '-01');
+        return {
+          month: date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+          peerScore: data.peerCount > 0 ? Number((data.peerTotal / data.peerCount).toFixed(1)) : null,
+          selfScore: data.selfCount > 0 ? Number((data.selfTotal / data.selfCount).toFixed(1)) : null,
+        };
+      });
+
     return {
       radarData,
       overallAverage: overallCount > 0 ? (overallTotal / overallCount).toFixed(1) : 'N/A',
       topStrengths,
       areasForImprovement,
       totalReviews: activeFeedback.length,
+      hasPeerFeedback: activeFeedback.length > 0,
+      hasSelfFeedback: !!selfAssessmentFeedback,
+      progressData,
     };
   };
 
@@ -263,8 +338,17 @@ export default function Dashboard() {
     }
   };
 
+  const availableMonths = Array.from(new Set(feedback.filter(f => !f.is_archived && f.reviewer_relationship !== 'Self').map(f => f.date.substring(0, 7)))).sort().reverse();
+  const availableReviewers = Array.from(new Set(feedback.filter(f => !f.is_archived && f.reviewer_relationship !== 'Self').map(f => f.reviewer_name))).sort();
+  const availableRoles = Array.from(new Set(feedback.filter(f => !f.is_archived && f.reviewer_relationship !== 'Self').map(f => f.reviewer_relationship))).sort();
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-5xl mx-auto"
+    >
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 mb-2">
@@ -562,8 +646,64 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            {/* Advanced Filters */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm mb-6"
+            >
+              <h3 className="text-sm font-bold text-stone-900 mb-4 uppercase tracking-wider">Advanced Filters</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Month</label>
+                  <select
+                    value={filterMonth}
+                    onChange={(e) => setFilterMonth(e.target.value)}
+                    className="block w-full rounded-md border-stone-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border bg-stone-50"
+                  >
+                    <option value="all">All Months</option>
+                    {availableMonths.map(m => (
+                      <option key={m} value={m}>{new Date(m + '-01').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Reviewer</label>
+                  <select
+                    value={filterReviewer}
+                    onChange={(e) => setFilterReviewer(e.target.value)}
+                    className="block w-full rounded-md border-stone-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border bg-stone-50"
+                  >
+                    <option value="all">All Reviewers</option>
+                    {availableReviewers.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Reviewer Role</label>
+                  <select
+                    value={filterRole}
+                    onChange={(e) => setFilterRole(e.target.value)}
+                    className="block w-full rounded-md border-stone-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border bg-stone-50"
+                  >
+                    <option value="all">All Roles</option>
+                    {availableRoles.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Top Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            >
               <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-stone-200 to-stone-300"></div>
                 <div className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2">Total Reviews</div>
@@ -580,59 +720,94 @@ export default function Dashboard() {
                 <div className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-4">Reviewer Breakdown</div>
                 <div className="space-y-3">
                   {Object.entries(
-                    feedback.filter(f => !f.is_archived).reduce((acc, curr) => {
-                      acc[curr.reviewer_relationship] = (acc[curr.reviewer_relationship] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
+                    feedback
+                      .filter(f => !f.is_archived && f.reviewer_relationship !== 'Self')
+                      .filter(f => filterMonth === 'all' || f.date.substring(0, 7) === filterMonth)
+                      .filter(f => filterReviewer === 'all' || f.reviewer_name === filterReviewer)
+                      .filter(f => filterRole === 'all' || f.reviewer_relationship === filterRole)
+                      .reduce((acc, curr) => {
+                        acc[curr.reviewer_relationship] = (acc[curr.reviewer_relationship] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
                   ).map(([rel, count]) => (
                     <div key={rel} className="flex justify-between items-center text-sm">
                       <span className="text-stone-600 font-medium">{rel}</span>
                       <span className="font-bold bg-stone-100 px-2.5 py-1 rounded-md text-stone-700">{count}</span>
                     </div>
                   ))}
+                  {feedback
+                    .filter(f => !f.is_archived && f.reviewer_relationship !== 'Self')
+                    .filter(f => filterMonth === 'all' || f.date.substring(0, 7) === filterMonth)
+                    .filter(f => filterReviewer === 'all' || f.reviewer_name === filterReviewer)
+                    .filter(f => filterRole === 'all' || f.reviewer_relationship === filterRole)
+                    .length === 0 && (
+                    <div className="text-sm text-stone-500 italic">No peer reviews yet</div>
+                  )}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="space-y-6"
+            >
               {/* Radar Chart */}
-              <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-stone-900 mb-6 flex items-center">
-                  <span className="w-2 h-6 bg-red-500 rounded-full mr-3"></span>
-                  Competency Overview
-                </h3>
-                <div className="h-80 w-full">
+              <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm flex flex-col">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                  <h3 className="text-lg font-bold text-stone-900 flex items-center">
+                    <span className="w-2 h-6 bg-red-500 rounded-full mr-3"></span>
+                    Competency Overview
+                  </h3>
+                  {feedback.filter(f => !f.is_archived && f.reviewer_relationship === 'Self').length > 0 && (
+                    <div className="relative w-full sm:w-auto">
+                      <select
+                        value={selectedSelfAssessmentId || ''}
+                        onChange={(e) => setSelectedSelfAssessmentId(Number(e.target.value))}
+                        className="appearance-none w-full sm:w-auto bg-stone-50 border border-stone-200 text-stone-700 py-1.5 pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm font-medium transition-colors cursor-pointer hover:bg-stone-100"
+                      >
+                        <option value="" disabled>Select Self-Assessment</option>
+                        {feedback
+                          .filter(f => !f.is_archived && f.reviewer_relationship === 'Self')
+                          .map(f => (
+                            <option key={f.id} value={f.id}>
+                              Self-Assessment ({new Date(f.date).toLocaleDateString('en-GB')})
+                            </option>
+                          ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-stone-500">
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="w-full h-[400px] sm:h-[500px] -ml-4 sm:ml-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={stats.radarData}>
-                      <defs>
-                        <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
-                        </linearGradient>
-                        <linearGradient id="colorSelf" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                        </linearGradient>
-                      </defs>
                       <PolarGrid stroke="#e5e7eb" strokeDasharray="3 3" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#57534e', fontSize: 12, fontWeight: 500 }} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#57534e', fontSize: 11, fontWeight: 500 }} />
                       <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#a8a29e', fontSize: 10 }} />
-                      <Radar
-                        name="Peer Score"
-                        dataKey="score"
-                        stroke="#dc2626"
-                        strokeWidth={2}
-                        fill="url(#colorScore)"
-                        fillOpacity={1}
-                      />
-                      <Radar
-                        name="Self Score"
-                        dataKey="selfScore"
-                        stroke="#2563eb"
-                        strokeWidth={2}
-                        fill="url(#colorSelf)"
-                        fillOpacity={0.5}
-                      />
+                      {stats.hasPeerFeedback ? (
+                        <Radar
+                          name="Peer Score"
+                          dataKey="score"
+                          stroke="#dc2626"
+                          strokeWidth={2}
+                          fill="#ef4444"
+                          fillOpacity={0.4}
+                        />
+                      ) : null}
+                      {stats.hasSelfFeedback ? (
+                        <Radar
+                          name="Self Score"
+                          dataKey="selfScore"
+                          stroke="#2563eb"
+                          strokeWidth={2}
+                          fill="#3b82f6"
+                          fillOpacity={0.4}
+                        />
+                      ) : null}
                       <Tooltip 
                         formatter={(value: number, name: string) => [value, name]}
                         labelFormatter={(label) => stats.radarData.find(d => d.subject === label)?.fullTitle || label}
@@ -645,7 +820,7 @@ export default function Dashboard() {
               </div>
 
               {/* Strengths & Weaknesses */}
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
                   <div className="flex items-center mb-6">
                     <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4 border border-emerald-100">
@@ -667,6 +842,9 @@ export default function Dashboard() {
                         </div>
                       </div>
                     ))}
+                    {stats.topStrengths.length === 0 && (
+                      <div className="text-sm text-stone-500 italic">Not enough peer feedback yet.</div>
+                    )}
                   </div>
                 </div>
 
@@ -691,13 +869,53 @@ export default function Dashboard() {
                         </div>
                       </div>
                     ))}
+                    {stats.areasForImprovement.length === 0 && (
+                      <div className="text-sm text-stone-500 italic">Not enough peer feedback yet.</div>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
+
+            {/* Progress Over Time */}
+            {stats.progressData && stats.progressData.length > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.5 }}
+                className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm"
+              >
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mr-4 border border-blue-100">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-900">Progress Over Time</h3>
+                </div>
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={stats.progressData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis dataKey="month" tick={{ fill: '#57534e', fontSize: 12 }} tickLine={false} axisLine={false} />
+                      <YAxis domain={[0, 4]} tick={{ fill: '#57534e', fontSize: 12 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      <Line type="monotone" dataKey="peerScore" name="Peer Score" stroke="#dc2626" strokeWidth={3} dot={{ r: 4, fill: '#dc2626' }} activeDot={{ r: 6 }} connectNulls />
+                      <Line type="monotone" dataKey="selfScore" name="Self Score" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#2563eb' }} activeDot={{ r: 6 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </motion.div>
+            )}
 
             {/* Open Ended Feedback */}
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden"
+            >
               <div className="px-8 py-5 border-b border-stone-200 bg-stone-50/80">
                 <h3 className="text-lg font-bold text-stone-900 flex items-center">
                   <MessageSquare className="w-5 h-5 mr-3 text-stone-400" />
@@ -714,7 +932,12 @@ export default function Dashboard() {
                   <div key={section.key} className="p-8">
                     <h4 className="text-sm font-bold text-stone-800 mb-6">{section.title}</h4>
                     <div className="space-y-4">
-                      {feedback.filter(f => !f.is_archived).map((f, i) => {
+                      {feedback
+                        .filter(f => !f.is_archived)
+                        .filter(f => filterMonth === 'all' || f.date.substring(0, 7) === filterMonth)
+                        .filter(f => filterReviewer === 'all' || f.reviewer_name === filterReviewer)
+                        .filter(f => filterRole === 'all' || f.reviewer_relationship === filterRole)
+                        .map((f, i) => {
                         const text = f[section.key as keyof Feedback];
                         if (!text) return null;
                         return (
@@ -737,7 +960,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-stone-200 p-12 text-center shadow-sm">
@@ -749,11 +972,20 @@ export default function Dashboard() {
           </div>
         )
       ) : (
-        <div className="space-y-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="space-y-4"
+        >
           <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
             <h3 className="text-lg font-bold text-stone-900 mb-6">Individual Feedback Responses</h3>
               <div className="space-y-4">
-                {feedback.map((f) => (
+                {feedback
+                  .filter(f => filterMonth === 'all' || f.date.substring(0, 7) === filterMonth)
+                  .filter(f => filterReviewer === 'all' || f.reviewer_name === filterReviewer)
+                  .filter(f => filterRole === 'all' || f.reviewer_relationship === filterRole)
+                  .map((f) => (
                   <div key={f.id} className={`border ${f.is_archived ? 'border-stone-200 opacity-60 bg-stone-50' : 'border-stone-200 bg-white'} rounded-xl overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md`}>
                     <div 
                       className={`px-5 py-4 flex items-center justify-between cursor-pointer transition-colors ${f.is_archived ? 'hover:bg-stone-100' : 'hover:bg-stone-50'}`}
@@ -855,7 +1087,7 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
       )}
 
       {deletePrompt && (
@@ -895,6 +1127,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
